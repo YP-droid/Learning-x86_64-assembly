@@ -50,11 +50,10 @@ slen:
         ret
               
 readline:
-;#read from terminal
 mov rdx,rsi ;#len
 mov rsi,rdi ;#where we wanna write
 mov rax, 0
-mov rdi, 0 ;#print to terminal
+mov rdi, 0 ;#read from terminal
 syscall
 ret        
 
