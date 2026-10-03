@@ -4,22 +4,53 @@
 _start:
 
 lea rdi, [buf]
-lea rsi, [bufsize-1] ;#to make space for the null terminator
+lea rsi, [buflen]
+
 call readline
 
-lea rdi, [buf] 
 
-call memview
+mov rsi, rax ;#as rax has the length of string read
+lea rdi, [buf]
+;#null terminate the i/p string
+mov byte ptr [rdi+rsi], 0
 
-lea rdi, [buf] 
-mov byte ptr [rdi + rax], 0 ;#null terminate the string    
-
-call memview
 
 lea rdi, [buf]
-call print;
+lea rsi, [tokens]
+call tokenize
+
+lea rdi, [buf]
+call print
 
 call exit
+
+
+;#convert all spaces to null terminator
+tokenize:
+        mov r15, rsi
+        tokenize.loop:
+            mov [r15], rdi
+            add r15, 8 ;#store next char in seperate byte
+            call memview
+            
+            call findend
+            mov byte ptr [rdi], 0
+            inc rdi
+            
+            call memview
+            jmp tokenize.loop
+            ret 
+        
+;#find the spaces b/w words 
+findend:
+        cmp byte ptr [rdi], ' '
+        je findend.exit
+        inc rdi
+        jmp findend
+        
+        findend.exit:
+                ret
+
 
 exit:
         xor rdi, rdi
@@ -35,9 +66,11 @@ print:
         mov rdi, 1
         syscall
         ret
+      
         
 slen:
     xor rcx, rcx
+
     slen.loop:
         mov al, [rdi + rcx]
         cmp al, 0
@@ -48,25 +81,24 @@ slen:
       slen.ret:
         mov rax, rcx
         ret
-              
 readline:
-mov rdx,rsi ;#len
-mov rsi,rdi ;#where we wanna write
-mov rax, 0
-mov rdi, 0 ;#read from terminal
-syscall
-ret        
+        mov rdx, rsi
+        mov rsi, rdi
+        mov rax, 0
+        mov rdi, 0
+        syscall
+        ret
 
-;#to see live change in memory stack
 memview:
-mov r14, rsp
-lea rsp, [rdi]
-int 3
-mov rsp, r14
-ret
+        mov r11, rsp
+        lea rsp, [buf]
+        int 3
+        lea rsp, [r11]
+        ret
+        
         
 .data
-buf : .skip 50, 0xff
-bufsize = . - buf
-
-
+buf: .skip 128, 0xff
+buflen= . - buf
+tokens: .skip 128 ;#token array        
+    
