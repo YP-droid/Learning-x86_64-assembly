@@ -110,7 +110,7 @@ exit:
 print:
         push rdi
         call slen
-        pop rsi
+        pop rdi
         mov rdx, rax
         mov rax, 1
         mov rdi, 1
