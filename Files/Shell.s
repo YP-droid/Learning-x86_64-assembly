@@ -1,25 +1,54 @@
-
 .intel_syntax noprefix
 .global _start
 .text
 _start:
 
-
+;#read i/p from user
 lea rdi, [buf]
 lea rsi, [bufsize]
 call readline
 call memview
 
-
+;#tokenize the i/p 
 lea rdi, [buf]
 lea rsi, [tokens]
 call tokenize
 
 call memview
 
+;#exit check
+lea rdi, [tokens] ;#tokens contains a ptr to the first token
+lea rsi, [s_cmd_exit] 
+mov rdi, [rdi] ;#now rdi contains first token
+call strcmp ;#rax=0 if exit
+je exit
 
-call exit
+;#lea rdi, [s_nocommand]
+;#call println
 
+;#echo check
+lea rdi, [tokens] 
+lea rsi, [s_cmd_echo] 
+mov rdi, [rdi] 
+call strcmp 
+je select_echo
+
+
+;#loop
+jmp _start
+
+select_echo:
+        lea rdi, [tokens+8] ;#move to next line
+        mov rdi, [rdi] ;#dereference
+        call echo 
+        jmp _start
+
+echo:
+        call print
+        echo.ret:
+                lea rdi, [newline]
+                call print
+                ret
 
 
 strcmp: ;# args: rdi s1, rsi s2
@@ -195,3 +224,6 @@ tokens: .skip 128, 0xbb
 newline: .asciz "\n"
 space: .asciz " "
 s_nodata: .asciz "\nNo data entered!\n"
+s_cmd_exit: .asciz "exit"
+s_cmd_echo: .asciz "echo"
+s_nocommand: .asciz "\n unsupported command\n"
