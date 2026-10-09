@@ -8,18 +8,21 @@ lea rdi, [buf]
 lea rsi, [bufsize]
 call readline
 call memview
+cmp rax, 0
+je _start
 
 ;#tokenize the i/p 
 lea rdi, [buf]
 lea rsi, [tokens]
 call tokenize
 
-call memview
-
+;#if user enters only whitespaces
 ;#exit check
 lea rdi, [tokens] ;#tokens contains a ptr to the first token
 lea rsi, [s_cmd_exit] 
 mov rdi, [rdi] ;#now rdi contains first token
+cmp rdi, 0
+je exit
 call strcmp ;#rax=0 if exit
 je exit
 
@@ -34,17 +37,47 @@ call strcmp
 je select_echo
 
 
+
+lea rdi, [tokens]
+mov rdi, [rdi]
+lea rsi, [s_commandhelp]
+call strcmp
+je select_help
+
+lea rdi, [s_nocommand]
+call print
+
 ;#loop
 jmp _start
 
+select_help:
+        call help
+        jmp _start
+
 select_echo:
         lea rdi, [tokens+8] ;#move to next line
-        mov rdi, [rdi] ;#dereference
+        
         call echo 
         jmp _start
 
-echo:
+help:
+        lea rdi, [s_help]
         call print
+        ret
+
+echo:
+        mov r15, rdi ;#store rdi
+        echo.loop:
+              mov rdi, [r15] ;#dereference
+              cmp rdi, 0
+              je echo.ret
+              call print
+              
+              lea rdi, [space] 
+              call print
+              
+              add r15, 8
+              jmp echo.loop
         echo.ret:
                 lea rdi, [newline]
                 call print
@@ -160,6 +193,11 @@ exit:
         mov rax, 60
         syscall
 
+no_print:
+        mov rdi, [nothing]
+        call print
+        
+        
 print:
         push rdi
         call slen
@@ -218,6 +256,7 @@ memview:
         ret
 
 .data
+nothing: .asciz ""
 buf: .skip 128, 0xaa
 bufsize = . - buf
 tokens: .skip 128, 0xbb
@@ -227,3 +266,5 @@ s_nodata: .asciz "\nNo data entered!\n"
 s_cmd_exit: .asciz "exit"
 s_cmd_echo: .asciz "echo"
 s_nocommand: .asciz "\n unsupported command\n"
+s_commandhelp: .asciz "help"
+s_help: .asciz "\navailable help:\necho\nexit\nhelp\n"
